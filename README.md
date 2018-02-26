@@ -1,6 +1,6 @@
 # CheckApp
 
-Healthcase made easy
+Healthcare made easy
 
 ## Install the Polymer-CLI
 
