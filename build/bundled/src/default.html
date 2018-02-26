@@ -1,0 +1,116 @@
+<html><head><meta charset="UTF-8"><link rel="import" href="check-app.html"></head><body><dom-module id="default-view">
+    <template>
+        <style include="checkapp-styles"></style>
+        <style>
+            :host {
+                display: block;
+                padding: 10px;
+            }
+
+            google-map {
+                height: 300px;
+            }
+
+            .continueBtnContainer {
+                padding-top: 10px;
+            }
+
+            .simpleBtn {
+                width: 100%;
+                text-transform: initial;
+                font-size: 13px;
+            }
+
+                .simpleBtn span {
+                    padding-left: 5px;
+                }            
+
+            .simpleBtnTop {
+                width: 28%;
+                height: 40px;
+                margin: 10px;
+                font-size: 13px;
+            }
+        </style>
+
+        <iron-ajax id="appointmentSearchAjax" url="/appointmenttype" handle-as="json" loading="{{loadingAppointmentTypes}}" last-response="{{appointmentTypesList}}"></iron-ajax>
+
+        <iron-ajax id="appointmentProfesionalsAjax" url="/appointmenttype/getprofessionals" handle-as="json" loading="{{loadingAppointmentProfessionals}}" last-response="{{appointmentTypeProfessionalsList}}"></iron-ajax>
+
+        <app-location route="{{route}}"></app-location>
+        <app-route route="{{route}}" pattern="/consult" data="{{routeData}}" tail="{{routeConsult}}" active="{{pageActive}}"></app-route>
+        <app-route route="{{routeConsult}}" pattern="/:cityId" data="{{routeCityData}}" tail="{{routeCity}}" active="{{hasCity}}"></app-route>
+        <app-route route="{{routeCity}}" pattern="/:appType" data="{{routeAppTypeData}}" active="{{hasAppType}}"></app-route>
+
+        <div id="container" class="flex-center-justified">
+
+            <paper-material elevation="2" class="checkapp-page">
+                <div hidden$="{{_hiddenMapSelection(pageActive, hasCity, hasAppType)}}">
+
+                    <div class="flex-start-justified">
+                        <paper-autocomplete label="Pesquisar cidade" id="inputLocal" remote-source="true" min-length="2" text="{{searchValue}}" style="width: 70%"></paper-autocomplete>
+                        <paper-button raised="" class="primary simpleBtnTop" on-tap="confirmCity" disabled$="{{!canConfirmPlace}}">Confirmar</paper-button>
+                    </div>
+
+                    <geo-location id="geoLocation" latitude="{{lat}}" longitude="{{lng}}">
+                    </geo-location>
+
+                    <google-map id="mapaLocal" map="{{map}}" latitude="[[lat]]" longitude="[[lng]]" api-key="{{GMapsKey}}" language="pt-BR" zoom="10" fit-to-markers="" disable-street-view-control="">
+                        <google-map-marker id="mapMarker" latitude="[[lat]]" longitude="[[lng]]" info="{{markerInfo}}">
+                        </google-map-marker>
+                    </google-map>
+                    
+                    <google-map-search id="mapSearch" map="[[map]]" types="cities" global-search="">
+                    </google-map-search>
+
+                    
+
+                </div>
+                <div hidden$="{{_hiddenAppType(pageActive, hasCity, hasAppType)}}">
+                    <div class="flex-center-justified">
+                        <span style="font-size: 24px">[[cityName]]</span>
+                        <paper-icon-button on-tap="clearCity" class="primary small" icon="icons:cached"></paper-icon-button>
+                    </div>
+
+                    <template is="dom-if" if="{{loadingAppointmentTypes}}">
+                        <div class="flex-center-justified">
+                            <paper-spinner-lite active=""></paper-spinner-lite>
+                        </div>
+                    </template>
+
+    <paper-listbox hidden$="{{loadingAppointmentTypes}}" selected="{{appTypeSelectedId}}" attr-for-selected="id" style="height: 300px; overflow: auto">
+        <template is="dom-repeat" items="{{appointmentTypesList}}">
+                            <paper-item id="[[item.id]]">{{item.name}}</paper-item>
+                        </template>
+    </paper-listbox>
+
+    <div class="flex-center-justified continueBtnContainer">
+        <paper-button raised="" class="primary" disabled$="[[!_isValidAppointment(appTypeSelectedId)]]" on-tap="confirmAppType">Avançar</paper-button>
+    </div>
+    </div>
+    <div hidden$="{{_hiddenProfessional(pageActive, hasCity, hasAppType)}}">
+        Profissionais disponíveis:
+
+        <template is="dom-if" if="{{loadingAppointmentProfessionals}}">
+                        <div class="flex-center-justified">
+                            <paper-spinner-lite active=""></paper-spinner-lite>
+                        </div>
+                    </template>
+
+        <paper-listbox hidden$="{{loadingAppointmentTypes}}" selected="{{professionalSelectedId}}" attr-for-selected="id" style="height: 300px; overflow: auto">
+            <template is="dom-repeat" items="{{appointmentTypeProfessionalsList}}">
+                            <paper-item id="[[item.id]]">
+                                <iron-image class="avatar" sizing="contain" src="[[item.srcPhoto]]"></iron-image>[[item.name]]
+                            </paper-item>
+                        </template>
+        </paper-listbox>
+
+        <div class="flex-center-justified continueBtnContainer">
+            <paper-button raised="" class="primary" disabled$="[[!_isValidProfessional(professionalSelectedId)]]" on-tap="confirmProfessional">Avançar</paper-button>
+        </div>
+    </div>
+    </paper-material>
+    </div>
+    </template>
+    <script>!function(){Polymer({is:"default-view",properties:{description:{type:String,value:"Consulta"},GMapsKey:{value:"AIzaSyC5KDW7xupwDTw9hXB5cfxo9ezYq1PdUOA"},routeData:{type:Object,notify:!0},gmapready:{value:!1},geolocationready:{value:!1},canConfirmPlace:!1,appTypeSelectedId:0,professionalSelectedId:0,cityName:"",pageActive:{type:Boolean,value:!1}},observers:["_routeChanged(route)","_routePageChanged(routeData)","_routePageCityChanged(routeCityData.cityId)","_routePageAppTypeChanged(routeAppTypeData.appType)"],attached:function(){var e=this;this.$.mapSearch.addEventListener("google-map-search-results",function(t){e.$.inputLocal.suggestions(t.detail.map(function(e){return{text:e.name,value:{id:e.place_id,lat:e.latitude,lng:e.longitude}}}))}),this.$.inputLocal.addEventListener("autocomplete-change",function(t){e.$.mapSearch.query=t.detail.option.text,e.$.mapSearch.search()}),this.$.inputLocal.addEventListener("autocomplete-selected",function(t){t.detail.value&&(e.cityId=t.detail.value.id,e.cityName=t.detail.text,e.lat=t.detail.value.lat,e.lng=t.detail.value.lng,e.canConfirmPlace=!0)}),this.$.mapaLocal.addEventListener("google-map-ready",function(){e.gmapready=!0}),this.$.mapaLocal.addEventListener("google-map-ready",function(){e.gmapready=!0}),this.$.geoLocation.addEventListener("geo-response",function(){e.geolocationready=!0})},_routeChanged:function(e){"/consult"==e.path&&this.setCurrentLocation()},_routePageChanged:function(){this.searchValue="",this.$.inputLocal.$.input.focus(),this.canConfirmPlace=!1},_routePageCityChanged:function(){this.pageActive&&(this.appTypeSelectedId=0,this.$.appointmentSearchAjax.generateRequest())},_routePageAppTypeChanged:function(){this.pageActive&&(this.professionalSelectedId=0,this.$.appointmentProfesionalsAjax.params.appTypeId=this.routeAppTypeData.appType,this.$.appointmentProfesionalsAjax.generateRequest())},confirmCity:function(){this.set("route.path","/consult/"+this.cityId)},confirmAppType:function(){this.set("route.path","/consult/"+this.cityId+"/"+this.appTypeSelectedId)},confirmProfessional:function(){this.set("route.path","/agenda/"+this.professionalSelectedId)},_isValidAppointment:function(e){return 0!==e},_isValidProfessional:function(e){return 0!==e},clearCity:function(){this.set("route.path","/consult"),this.searchValue="",this.$.inputLocal.$.input.focus(),this.canConfirmPlace=!1},setCurrentLocation:function(){var e=this,t=new google.maps.Geocoder,a=new google.maps.places.PlacesService(this.map);t.geocode({location:this.map.getCenter()},function(t,n){n===google.maps.GeocoderStatus.OK?t[1]?a.getDetails({placeId:t[1].place_id},function(t,a){a===google.maps.places.PlacesServiceStatus.OK&&(console.log(t),e.cityId=t.place_id,e.cityName=t.address_components[2].long_name,e.searchValue=t.address_components[2].long_name,e.canConfirmPlace=!0)}):console.warn("No results found"):console.warn("Geocoder failed due to: "+n)})},_hiddenMapSelection:function(e,t,a){return t},_hiddenAppType:function(e,t,a){return!t||a},_hiddenProfessional:function(e,t,a){return!t||!a&&t}})}();</script>
+</dom-module></body></html>

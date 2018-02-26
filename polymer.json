@@ -1,0 +1,36 @@
+{
+    "entrypoint": "index.html",
+    "shell": "src/check-app.html",
+    "fragments": [
+        "src/agenda.html",
+        "src/app-theme.html",
+        "src/consult.html",
+        "src/default.html",
+        "src/examinations.html",
+        "src/history.html",
+        "src/login.html",
+        "src/moment-element.html",
+        "src/numeral-element.html",
+        "src/profile.html",
+        "src/settings.html"
+    ],
+    "builds": [{
+        "addServiceWorker": false,
+        "bundle": true,
+        "js": { "minify": true },
+        "css": { "minify": true },
+        "html": { "minify": true }
+    }],
+    "sources": [
+        "src/**/*",
+        "css/**/*",
+        "js/**/*",
+        "images/**/*",
+        "bower.json"
+    ],
+    "includeDependencies": [
+        "manifest.json",
+        "favicon.ico",
+        "bower_components/webcomponentsjs/webcomponents-lite.min.js"
+    ]
+}

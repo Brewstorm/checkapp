@@ -1,0 +1,181 @@
+<html><head><link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-material/paper-material.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../bower_components/facebook-login/dist/facebook-login.html">
+<link rel="import" href="../bower_components/iron-form/iron-form.html">
+<link rel="import" href="../bower_components/paper-checkbox/paper-checkbox.html">
+<link rel="import" href="../bower_components/paper-radio-group/paper-radio-group.html">
+<link rel="import" href="../bower_components/paper-radio-button/paper-radio-button.html">
+<link rel="import" href="../bower_components/iron-image/iron-image.html">
+<link rel="import" href="../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+
+
+
+
+<link rel="import" href="styles/checkapp-styles.html">
+
+</head><body><dom-module id="login-page">
+    <style include="checkapp-styles">
+         :host {
+            display: none;
+            font-family: Roboto, Helvetica, Arial, sans-serif;
+            background: #ffffff;
+            text-align: left;
+        }
+        
+        paper-material {
+            padding: 16px;
+            width: 300px;
+        }
+        
+        .iconLogo {
+            --iron-image-width: 100%;
+            width: 100%;
+            height: 95px;
+            margin-top: 10px;
+        }
+        
+        #btnLogin {
+            background: #44546a;
+            color: #ffffff;
+            width: 100%;
+            margin: 30px 0 10px;
+        }
+        
+        .bottomLoginPage {
+            text-align: center;
+            font-size: 13px;
+        }
+        
+        .width100 {
+            width: 100%;
+        }
+        
+        .bottomLoginPage table {
+            width: 100%;
+        }
+        
+        .bottomLoginPage td {
+            text-align: center;
+        }
+        
+        a,
+        a:active,
+        a:visited {
+            color: #44546a;
+            /*text-decoration: none;*/
+        }
+        
+        paper-input-error {
+            padding-top: 10px;
+        }
+        
+        .avatar {
+            height: 70px;
+            width: 70px;
+            border-radius: 35px;
+        }
+        
+        .pdm-especialidade {
+            --paper-dropdown-menu-button: {
+                width: 100%;
+            }
+            ;
+        }
+    </style>
+    <template>
+        
+        
+        <iron-ajax id="tokenService" url="/token" method="POST" content-type="application/x-www-form-urlencoded" on-response="updatetoken" on-error="loginError"></iron-ajax>
+
+        <iron-ajax id="fbcredentialService" url="/login/fbcredentials" method="POST" on-response="_fbcredentialok" on-error="_fbcredentialnotfound"></iron-ajax>
+        
+
+        <iron-ajax id="cadService" url="/login/registeruser" content-type="application/json" method="POST" last-error="{{cadresponse}}" on-response="_cadserviceok" on-error="_cadservicenotfound"></iron-ajax>   
+
+        <iron-ajax id="appointmentSearchAjax" url="/appointmenttype" handle-as="json" last-response="{{appointmentTypesList}}"></iron-ajax>
+        
+        <iron-ajax id="logoutService" url="/login/logout" method="POST"></iron-ajax>     
+
+        <app-location route="{{route}}"></app-location>
+        <app-route route="{{route}}" pattern="/login" data="{{routeData}}"></app-route>
+        <app-route route="{{route}}" pattern="/register" data="{{routeData}}" active="{{registerActive}}"></app-route>
+
+        <paper-material elevation="1">
+            <div hidden$="{{registerActive}}">
+                <iron-image sizing="contain" fade="" src="../images/ca_marca.png" class="iconLogo"></iron-image>
+                <div>
+                    <paper-input id="loginUsername" label="Usuário" autofocus="" value="{{userLogin}}"></paper-input>
+                </div>
+                <div>
+                    <paper-input-container id="loginPasswordContainer">
+                        <label>Senha</label>
+                        <input is="iron-input" id="loginPassword" type="password" bind-value="{{userPassword}}">
+                        <paper-input-error>Usuário ou Senha inválido.</paper-input-error>
+                    </paper-input-container>
+                </div>
+                <div>
+                    <paper-button id="btnLogin" on-tap="gettoken">Entrar</paper-button>
+                </div>
+                <div class="bottomLoginPage">
+                    <table>
+                        <tbody><tr>
+                            <td>Não possui conta? <a href="/register">Cadastre-se</a></td>
+                        </tr>
+                        <tr>
+                            <td>Esqueceu a senha? <a href="/forgot">Recupere</a></td>
+                        </tr>
+                    </tbody></table>
+                </div>
+            </div>
+            <div hidden$="{{!registerActive}}">
+                <form is="iron-form" id="cadForm">
+                    
+                    <paper-radio-group selected="{{cadInfo.usertype}}" class="flex-center-justified">
+                        <paper-radio-button name="1" value="1">Paciente</paper-radio-button>
+                        <paper-radio-button name="2" value="2">Médico</paper-radio-button>
+                    </paper-radio-group>
+                    <template is="dom-if" if="{{isCadMedic}}">
+                        <paper-dropdown-menu label="Especialidade" noink="" no-animations="" class="flex-center-justified pdm-especialidade">
+                            <paper-listbox class="dropdown-content" attr-for-selected="id" selected="{{cadInfo.appointmenttype}}">
+                                <template is="dom-repeat" items="{{appointmentTypesList}}">
+                                    <paper-item id="[[item.id]]">{{item.name}}</paper-item>
+                                </template>
+    </paper-listbox>
+    </paper-dropdown-menu>
+    </template>
+    <paper-input id="Name" name="name" label="Nome Completo" required="" value="{{cadInfo.name}}"></paper-input>
+    <paper-input id="Email" name="email" type="email" label="E-mail" required="" value="{{cadInfo.email}}"></paper-input>
+    <paper-input id="Password" name="password" label="Senha" type="password" required="" value="{{cadInfo.password}}"></paper-input>
+    <paper-dropdown-menu id="Gender" label="Gênero" attr-for-selected="id" noink="" no-animations="" class="flex-center-justified pdm-especialidade">
+        <paper-listbox class="dropdown-content" attr-for-selected="id" selected="{{cadInfo.gender}}">
+            <paper-item id="0">Feminino</paper-item>
+            <paper-item id="1">Masculino</paper-item>
+        </paper-listbox>
+    </paper-dropdown-menu>
+    <paper-input id="Birthday" name="birthday" label="Data de Nascimento" required="" value="{{_formatDate(birthday)}}">
+        <paper-icon-button suffix="" on-tap="_showDialog" icon="date-range">
+        </paper-icon-button>
+    </paper-input>
+    <br>
+    <div class="flex-center-justified">
+        <paper-button class="danger" raised="" on-tap="_reset">Cancelar</paper-button>
+        <paper-button class="primary" raised="" on-tap="_submit">Confirmar</paper-button>
+    </div>
+    </form>
+
+    <paper-dialog id="dialog" class="paper-date-picker-dialog" modal="">
+        <paper-date-picker id="picker" date="[[cadInfo.birthday]]" locale="[[locale]]" heading-format="[[headingFormat]]"></paper-date-picker>
+        <div class="buttons">
+            <paper-button dialog-dismiss="">Cancelar</paper-button>
+            <paper-button dialog-confirm="" on-tap="_confirmDate">OK</paper-button>
+        </div>
+    </paper-dialog>
+    </div>
+    </paper-material>
+    </template>
+    <script>Polymer({is:"login-page",behaviors:[Polymer.NeonAnimationRunnerBehavior],properties:{opened:{type:Boolean},fbresp_id:0,isCadMedic:!1,fbAppId:282359548826115,fbloginready:!1,user:{type:Object,notify:!0,value:null,observer:"_userChanged"},isLoggedIn:{type:Boolean,notify:!0,observer:"_isLoggedInChanged"},birthday:new Date,cadInfo:{type:Object,value:{photourl:"/images/common/ic_account_circle_black.png",usertype:1,name:"",lastname:"",email:"",birthday:new Date,facebookid:"",appointmenttype:0,password:"",gender:0},notify:!0},token:{type:Object,observer:"_tokenChanged"},animationConfig:{value:function(){return{entry:{name:"fade-in-animation",node:this,timing:{duration:500}},exit:{name:"fade-out-animation",node:this}}}},userLoggingHidden:!1,userFirstTimeHidden:!0,maxDate:{value:function(){return new Date}},headingFormat:{value:"ddd, D MMM"},locale:{value:"pt-br"},userLogin:"",userPassword:""},observers:["_routeChanged(route)","_cadinfoUsertypeChanged(cadInfo.usertype)","_birthdayChanged(birthday)"],listeners:{"neon-animation-finish":"_onNeonAnimationFinish"},ready:function(){this.readCookie("access_token")},_birthdayChanged:function(e){this.cadInfo.birthday=e},_cadinfoUsertypeChanged:function(e){this.isCadMedic=2==e},show:function(){this.opened=!0,this.style.display="inline-block",this.cancelAnimation(),this.playAnimation("entry")},hide:function(){this.opened=!1,this.clearLoginFields(),this.cancelAnimation(),this.playAnimation("exit")},_routeChanged:function(e){"/login"==e.path&&this.logout(),"/register"==e.path&&this.$.appointmentSearchAjax.generateRequest()},gettoken:function(){this.token={},this.eraseCookie("access_token");try{this.fbresp_id}catch(e){}this.$.tokenService.body={username:this.userLogin,password:this.userPassword},this.$.tokenService.generateRequest()},updatetoken:function(e){this.token=e.detail.response},_onNeonAnimationFinish:function(){this.opened||(this.style.display="none")},_tokenChanged:function(e){},clearLoginFields:function(){this.userLogin=this.userPassword=""},loginError:function(){var e=this;this.$.loginUsername.invalid=this.$.loginPasswordContainer.invalid=!0,setTimeout(function(){e.$.loginUsername.invalid=e.$.loginPasswordContainer.invalid=!1},5e3)},logout:function(){this.token=null,this.fbresp_id=0,this.eraseCookie("access_token"),this.$.logoutService.generateRequest(),this.show()},_userChanged:function(e){e?(this.set("route.path","/default"),this.hide()):(this.set("route.path","/"),this.show())},_submit:function(){this.$.cadService.body=this.cadInfo,this.$.cadService.generateRequest()},_reset:function(){this.$.cadForm.reset(),this.set("route.path","/")},_loadfbdata:function(){if(this.fbdata&&Object.keys(this.fbdata).length>0){var e=this.fbdata,t=moment(e.birthday);this.cadInfo={facebookid:e.id,usertype:1,name:e.first_name,lastname:e.last_name,gender:"female"==e.gender?0:1,email:e.email,photourl:e.picture.data.url},this.birthday=t.toDate()}},_confirmDate:function(){this.cadInfo.birthday=this.$.picker.date},_formatDate:function(e){var t=moment(e);return t.isValid()?t.format("DD/MM/YYYY"):""},_showDialog:function(){document.body.append(this.$.dialog),this.$.dialog.toggle()},_fbcredentialok:function(){this.gettoken()},_fbcredentialnotfound:function(){this.async(function(){this._loadfbdata(),this.set("route.path","/register")},1e3)},_checkUserId:function(){this.$.fbcredentialService.params.fb_id=this.fbresp_id,this.$.fbcredentialService.generateRequest()},_cadserviceok:function(){this.userLogin=this.cadInfo.email,this.userPassword=this.cadInfo.password,this.gettoken()},_cadservicenotfound:function(){if(this.cadresponse&&this.cadresponse.response)for(var e in this.cadresponse.response){var t=this.cadresponse.response[e];this.$[t.key].errorMessage=t.errors[0].errorMessage,this.$[t.key].invalid=!0}},_confirmDate:function(){this.birthday=this.$.picker.date},createCookie:function(e,t,i){var n="";if(i){var o=new Date;o.setTime(o.getTime()+60*i*1e3),n="; expires="+o.toGMTString()}document.cookie=e+"="+t+n+"; path=/"},readCookie:function(e){for(var t=e+"=",i=document.cookie.split(";"),n=0;n<i.length;n++){for(var o=i[n];" "==o.charAt(0);)o=o.substring(1,o.length);if(0==o.indexOf(t))return o.substring(t.length,o.length)}return null},eraseCookie:function(e){this.createCookie(e,"",-1)}});</script>
+</dom-module></body></html>

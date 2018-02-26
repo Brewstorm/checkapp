@@ -1,0 +1,41 @@
+{
+  "name": "polymer-cookie",
+  "homepage": "https://github.com/andreasonny83/polymer-cookie",
+  "authors": [
+    "Andrea Sonny <andreasonny83@gmail.com>"
+  ],
+  "description": "Cookie Web Component for Polymer 1.x",
+  "main": "polymer-cookie.html",
+  "keywords": [
+    "web-components",
+    "polymer",
+    "cookie"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/andreasonny83/polymer-cookie.git"
+  },
+  "dependencies": {
+    "polymer": "Polymer/polymer#^1.0.0"
+  },
+  "devDependencies": {
+    "web-component-tester": "*"
+  },
+  "version": "1.1.1",
+  "_release": "1.1.1",
+  "_resolution": {
+    "type": "version",
+    "tag": "v1.1.1",
+    "commit": "7969968365339e1fb4aed5493d8011b5a3dc4f7f"
+  },
+  "_source": "https://github.com/andreasonny83/polymer-cookie.git",
+  "_target": "^1.1.1",
+  "_originalSource": "polymer-cookie",
+  "_direct": true
+}

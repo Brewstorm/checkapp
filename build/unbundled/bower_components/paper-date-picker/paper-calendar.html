@@ -1,0 +1,229 @@
+<html><head><link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../paper-ripple/paper-ripple.html">
+<link rel="import" href="../paper-styles/color.html">
+<link rel="import" href="../paper-styles/default-theme.html">
+<link rel="import" href="../paper-styles/shadow.html">
+<link rel="import" href="../paper-styles/typography.html">
+<link rel="import" href="../iron-resizable-behavior/iron-resizable-behavior.html">
+<link rel="import" href="../moment-element/moment-import.html">
+<link rel="import" href="paper-date-picker-icons.html">
+
+</head><body><dom-module id="paper-calendar">
+  <template>
+    <style>
+      :host {
+        display: block;
+        box-sizing: border-box;
+        padding: 12px 0;
+        position: relative;
+        width: 100%;
+        height: 100%;
+        min-width: 160px;
+        min-height: 160px;
+        color: var(--primary-text-color);
+        -webkit-font-smoothing: antialiased;
+        -webkit-tap-highlight-color: rgba(0,0,0,0);
+        --ease-in-sine: cubic-bezier(0.47, 0, 0.745, 0.715);
+        --ease-out-sine: cubic-bezier(0.39, 0.575, 0.565, 1);
+        @apply(--paper-font-body1);
+        @apply(--paper-calendar);
+        overflow: hidden;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+
+        @apply(--paper-calendar);
+      }
+      #calendar {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        @apply(--layout-horizontal);
+      }
+      #months {
+        height: 100%;
+        @apply(--layout-horizontal);
+      }
+      #months.animating .month-nav {
+        opacity: 1;
+      }
+      #months.animating {
+        transition-property: transform, opacity;
+        transition-duration: 300ms;
+      }
+      #months.animating.swipe {
+        transition-timing-function: var(--ease-in-sine);
+        --webkit-transition-timing-function: var(--ease-in-sine);
+      }
+      #months.animating.reset {
+        transition-timing-function: var(--ease-out-sine);
+        --webkit-transition-timing-function: var(--ease-out-sine);
+      }
+      .month {
+        height: 100%;
+        @apply(--layout-vertical);
+        @apply(--layout-justified);
+        @apply(--layout-flex);
+      }
+
+      .month-row, .month-nav {
+        height: calc(100%/8);
+        box-sizing: border-box;
+        padding: 0 calc(100%/36);
+      }
+
+      .month-col {
+        position: relative;
+        @apply(--layout-vertical);
+        @apply(--layout-flex);
+      }
+
+      .month-nav {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        opacity: 1;
+        @apply(--layout-horizontal);
+        @apply(--layout-center);
+      }
+      .month-nav .col {
+        position: relative;
+        @apply(--layout-vertical);
+        @apply(--layout-center-center);
+      }
+      .month-nav .btn .icon {
+        cursor: pointer;
+      }
+      .month-nav .btn .ripple {
+        position: absolute;
+        width: 48px;
+        height: 48px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      .month-nav .btn.right {
+        text-align: right;
+      }
+      .month-name {
+        line-height: 24px;
+        vertical-align: middle;
+        text-align: center;
+        font-weight: bold;
+        @apply(--paper-font-body2);
+        @apply(--layout-horizontal);
+        @apply(--layout-center);
+        @apply(--layout-center-justified);
+        @apply(--layout-flex);
+      }
+      .month-weekdays {
+        color: var(--secondary-text-color);
+        @apply(--layout-horizontal);
+        @apply(--layout-justified);
+        @apply(--layout-flex);
+      }
+      .month-days {
+        @apply(--layout-horizontal);
+        @apply(--layout-justified);
+        @apply(--layout-flex);
+      }
+      .month-col .day {
+        cursor: default;
+        pointer-events: none;
+        @apply(--layout-fit);
+        @apply(--layout-vertical);
+        @apply(--layout-center-center);
+      }
+      .month-col {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        @apply(--layout-center-center);
+      }
+      .day-item {
+        border-radius: 100%;
+        width: 100%;
+        height: 100%;
+      }
+      .day-item::selection {
+        background: none;
+      }
+      .day-item.selected {
+        background: var(--default-primary-color);
+      }
+      .day-item.selected .day {
+        color: var(--text-primary-color);
+      }
+      .day-item:not([disabled]) {
+        cursor: pointer;
+      }
+      .day-item[disabled] .day {
+        color: var(--text-disabled-color, #9d9d9d);
+      }
+      .day-item.today .day {
+        color: var(--default-primary-color);
+      }
+      .day-item.selected.today .day {
+        color: var(--text-primary-color);
+      }
+      .flex {
+        @apply(--layout-flex);
+      }
+      .flex-5 {
+        @apply(--layout-flex-5);
+      }
+    </style>
+    <div id="calendar">
+      <div id="months" on-track="_onTrack" class$="{{_contentClass}}">
+        <template is="dom-repeat" items="{{_months}}" as="month">
+          <div class$="{{_getMonthClass('month', month)}}">
+            <div class="month-row month-name">
+              <span>{{dateFormat(month.date, 'MMMM YYYY', locale)}}</span>
+            </div>
+            <div class="month-row month-weekdays week">
+              <template is="dom-repeat" items="{{_weekdays}}">
+                <div class="month-col layout vertical flex">
+                  <div class="day">{{item.0}}</div>
+                </div>
+              </template>
+            </div>
+            <template is="dom-repeat" items="{{month.weeks}}" as="row">
+              <div class="month-row month-days">
+                <template is="dom-repeat" items="{{row}}">
+                  <div class="month-col">
+                    <div class$="{{_getDayClass('day-item selection', item.date, today, date)}}" disabled$="{{_isDisabled(item.day, item.date, minDate, maxDate)}}" on-tap="_tapDay" date$="{{item.name}}">
+                      <div class="day">{{item.day}}</div>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+      <div id="monthNav" class="month-nav">
+        <div class="flex col self-stretch">
+          <div class="btn" on-tap="_swipePrevMonth">
+            <paper-ripple center="" class="ripple circle"></paper-ripple>
+            <iron-icon class="icon flex" icon="date-picker:chevron-left"></iron-icon>
+          </div>
+        </div>
+        <div class="flex-5"></div>
+        <div class="flex col self-stretch">
+          <div class="btn" on-tap="_swipeNextMonth">
+            <paper-ripple center="" class="ripple circle"></paper-ripple>
+            <iron-icon class="icon flex" icon="date-picker:chevron-right"></iron-icon>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+  <script>!function(){function t(t,e){return t=new Date(t.getTime()),e=new Date(e.getTime()),t.setHours(0,0,0,0),e.setHours(0,0,0,0),(t.getTime()-e.getTime())/864e5}Polymer({is:"paper-calendar",properties:{date:{type:Date,notify:!0,value:function(){return new Date},observer:"_dateChanged"},locale:{type:String,value:"en",notify:!0,observer:"_localeChanged"},minDate:{type:Date,value:null},maxDate:{type:Date,value:null},currentMonth:{type:Number},currentYear:{type:Number},_contentClass:String,_months:Array,_firstDayOfWeek:Number},behaviors:[Polymer.IronResizableBehavior],observers:["_populate(currentYear, currentMonth, minDate, maxDate, locale)"],listeners:{"iron-resize":"_resizeHandler",swiped:"_onSwipe"},ready:function(){this._updateToday(),this.currentMonth=this.date.getMonth()+1,this.currentYear=this.date.getFullYear(),this._transitionEvent=this._whichTransitionEnd()},dateFormat:function(t,e,i){if(!t)return"";var n=moment(t);return n.locale(i||this.locale),n.format(e)},_localeChanged:function(t){var e=moment();e.locale(t);for(var i=[],n=0;n<7;n++)i.push(e.weekday(n).format("dd"));this._weekdays=i,this._firstDayOfWeek=e.weekday(0).format("d")},_populate:function(t,e,i,n){var s,a,r,h,o,l,u,d=[];if(i&&new Date(t,e,0)<i)return this.currentYear=i.getFullYear(),void(this.currentMonth=i.getMonth()+1);if(n&&new Date(t,e-1,1)>n)return this.currentYear=n.getFullYear(),void(this.currentMonth=n.getMonth()+1);for(var _=-1;_<=1;_++)if(r=[[]],h=1,s=new Date(t,e-1+_,1),a=s.getMonth(),u={year:s.getFullYear(),month:s.getMonth()+1,date:new Date(s)},this._monthWithinValidRange(u.year,u.month)){var c=s.getDay()-this._firstDayOfWeek;for(c<0&&(c=7+c),o=0;o<c;o++)r[0].push({day:null,date:null});for(;s.getMonth()===a;)r[0].length&&o%7==0&&r.push([]),l={date:new Date(s.getFullYear(),a,h),name:this.dateFormat(s,"YYYY-MM-DD"),year:t,month:a,day:h},r[r.length-1].push(l),s.setDate(++h),o++;for(;o<42;)o%7==0&&r.push([]),r[r.length-1].push({day:null,date:null}),o+=1;u.weeks=r,d.push(u)}d.length&&(this.set("_months",d),this.async(function(){this._updateSelection(),this._positionSlider()}))},_getDayClass:function(e,i){return i&&(0===t(i,this.today)&&(e+=" today"),0===t(i,this.date)&&(e+=" selected",this.async(function(){this._updateSelection()}))),e},_isDisabled:function(t,e){return!t||!this._withinValidRange(e)},_getMonthClass:function(t,e){return t+" month-"+e.year+"-"+e.month},_onTrack:function(t){var e=t.detail.dx,i=t.detail.dy,n=Math.abs(e),s=Math.abs(i),a=this._containerWidth;switch(t.detail.state){case"start":this._trackStartTime=(new Date).getTime(),this._startPos=this._currentPos,this._moveQueue=[];break;case"track":this._moveQueue.length>=4&&this._moveQueue.shift(),this._moveQueue.push(t);var r=e*e+i*i;if(!this._gesture&&r>16&&(this._gesture=n>s?"pan-x":"pan-y"),"pan-x"!==this._gesture)return;this._dragging=!0;var h=a*this._months.length,o=this._startPos+e;if(o>0||o<-h+a){isNaN(parseInt(this._resistStart,10))&&(this._resistStart=n);var l,u,d=n-this._resistStart;l=d>a?1:d/a,u=40*(1-Math.pow(1-l,2)),o=e<0?-this._scrollWidth+a-u:u}else this._resistStart=null;this._translateX(o);break;case"end":this._resistStart=null;var _=this._getMonthIdx(this._startPos),c=this._getMonthIdx(this._currentPos),m=this._getFastestMovement(t).v,f=c!==_||m>.5;if(!this._resistStart&&"pan-x"===this._gesture&&f){if(m>.5){var g=a-n,p=g/m;p>300&&(p=300),this._transitionDuration=p}e>0?this._swipePrevMonth():this._swipeNextMonth()}else this._translateX(this._startPos,"reset");this._gesture=null}},_swipePrevMonth:function(){this._translateX(0,"swipe",function(){this.set("_contentClass",""),this.transform("translateX("+this._startPos+"px)",this.$.months),this.fire("swiped",{direction:"right"})}.bind(this))},_swipeNextMonth:function(){(!this.maxDate||this.currentMonth<this.maxDate.getMonth()+1)&&this._translateX(2*-this._containerWidth,"swipe",function(){this.set("_contentClass",""),this.transform("translateX("+this._startPos+"px)",this.$.months),this.fire("swiped",{direction:"left"})}.bind(this))},_getMonthIdx:function(t){var e=this._containerWidth,i=Math.floor((e/2-t)/e);return i<0?0:i},_translateX:function(t,e,i){if(isNaN(parseInt(t,10)))throw new Error("Not a number: "+t);this._currentPos=t,e&&(this._transitionDuration&&(this.$.months.style.transitionDuration=this._transitionDuration+"ms"),this._once(this._transitionEvent,function(){this.set("_contentClass",""),this.$.months.style.transitionDuration="",this._transitionDuration=null,this.$.monthNav.style.removeProperty("opacity"),i&&i()}.bind(this),this.$.months),this.set("_contentClass","animating "+e),this.$.monthNav.style.removeProperty("opacity"),this._once("touchstart",function(){})),window.requestAnimationFrame(function(){if(!e){var i=this._containerWidth/2,n=Math.abs(this._startPos-t),s=100*(1-n/i);s=(100-Math.pow(s,2))/100/100;var a=Math.abs(parseFloat(s).toFixed(2));this.$.monthNav.style.opacity=a}this.transform("translateX("+t+"px)",this.$.months)}.bind(this))},_getFastestMovement:function(t){for(var e,i,n,s,a,r=this._moveQueue.length,h=0,o=0,l=0,u=0;u<r&&(a=this._moveQueue[u]);u++)e=t.timeStamp-a.timeStamp,i=(t.detail.x-a.detail.x)/e,n=(t.detail.y-a.detail.y)/e,(s=i*i+n*n)>l&&(h=i,o=n,l=s);return{x:h,y:o,v:Math.sqrt(l)}},_onSwipe:function(t){"right"===t.detail.direction?this._prevMonth():this._nextMonth()},_once:function(t,e,i){function n(){i.removeEventListener(t,n),e.apply(null,arguments)}i=i||this,i.addEventListener(t,n)},_incrMonth:function(t){var e=new Date(this.currentYear,this.currentMonth-1+t),i=e.getFullYear(),n=e.getMonth()+1;this._monthWithinValidRange(i,n)&&(this.currentYear=i,this.currentMonth=n)},_prevMonth:function(){this._incrMonth(-1)},_nextMonth:function(){this._incrMonth(1)},_dateChanged:function(t,e){this._isValidDate(t)||(console.warn("Invalid date: "+t),this.date=t=e),this._withinValidRange(t)||(console.warn("Date outside of valid range: "+t),this.date=t=e),this.currentYear=t.getFullYear(),this.currentMonth=t.getMonth()+1,e&&t.getTime&&e.getTime&&t.getTime()===e.getTime()||this._updateSelection()},_tapDay:function(t){if(!this._withinValidRange(t.model.item.date))return!1;var e=t.model.item,i=new Date(this.date.getTime());i.setYear(e.year),i.setMonth(e.month),i.setDate(e.day),this.date=i},_isValidDate:function(t){return t&&t.getTime&&!isNaN(t.getTime())},_withinValidRange:function(t){return!!this._isValidDate(t)&&((!this.minDate||t>=this.minDate)&&(!this.maxDate||t<=this.maxDate))},_monthWithinValidRange:function(t,e){var i=new Date(t,e-1,1),n=new Date(t,e,0);return this._withinValidRange(i)||this._withinValidRange(n)},_positionSlider:function(){if(this._months&&this._containerWidth){this._scrollWidth=this.$.calendar.offsetWidth*this._months.length,this.$.months.style.minWidth=this._scrollWidth+"px";var t=12*this.currentYear+this.currentMonth-(12*this._months[0].year+this._months[0].month);this._translateX(-t*this._containerWidth)}},_updateSelection:function(){var t=this.$$(".day-item.selected");if(t){t.style.height="",t.style.width="";var e=t.parentElement.offsetWidth,i=t.parentElement.offsetHeight;t.style.flex="",window.requestAnimationFrame(function(){e>0&&e<i?t.style.height=e+"px":i>0&&(t.style.width=i+"px")})}},_resizeHandler:function(){this._containerWidth=this.$.calendar.offsetWidth,this._positionSlider(),this._updateSelection()},_getDayName:function(t){return t.getFullYear()+"-"+(t.getMonth()+1)+"-"+t.getDate()},_updateToday:function(){this.today=new Date,this.today.setHours(0,0,0,0)},_whichTransitionEnd:function(){var t={WebkitTransition:"webkitTransitionEnd",MozTransition:"transitionend",OTransition:"oTransitionEnd otransitionend",transition:"transitionend"};for(var e in t)if(void 0!==this.style[e])return t[e]}})}();</script>
+</dom-module>
+</body></html>

@@ -1,0 +1,332 @@
+﻿<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-autocomplete/paper-autocomplete.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/iron-list/iron-list.html">
+<link rel="import" href="../bower_components/iron-image/iron-image.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="numeral-element.html" />
+
+<dom-module id="agenda-view">
+    <template>
+        <style include="checkapp-styles"></style>
+        <style include="paper-date-picker-dialog-style"></style>
+        <style is="custpm-style">
+            :host {
+                display: block;
+                padding: 10px;
+            }
+
+            .group-header,
+            .group-item {
+                padding: 5px 10px;
+                background-color: white;
+                font-size: 20px;
+            }
+
+            .group-item {
+                @apply(--layout-horizontal);
+            }
+
+            .group-header {
+                font-weight: bold;
+                color: #333;
+                margin-top: 20px;
+            }
+
+                .group-header:before {
+                    content: '';
+                    border-top: 1px solid #ddd;
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                }
+
+            .avatar {
+                height: 60px;
+                width: 60px;
+                border-radius: 30px;
+                box-sizing: border-box;
+                background-color: #DDD;
+                margin-right: 15px;
+                margin-top: 15px;
+                box-shadow: 1px 1px 5px #ccc;
+            }
+
+            .pad {
+                line-height: 15px;
+            }
+
+                .pad span {
+                    display: -webkit-box;
+                }
+
+            .primary {
+                font-size: 14px;
+                line-height: 25px;
+                font-weight: bold;
+            }
+
+            .secondary {
+                color: gray;
+                font-size: 12px;
+            }
+
+            .state-list {
+                width: 250px;
+                height: 80vh;
+                color: black;
+            }
+
+            #dateSelected {
+                text-align: center;
+                padding: 20px;
+                font-weight: bold;
+            }
+
+            #horarios paper-material {
+                background: var(--app-primary-color);
+                color: white;
+                padding: 10px;
+                cursor: pointer;
+            }
+
+            .item-horario {
+                text-align: center;
+                padding: 5px 0;
+            }
+
+            .selected {
+                background: var(--app-third-color) !important;
+            }
+
+            .btn-datepicker {
+                background: #e8e8e8;
+                border-radius: 25px;
+            }
+
+            .btn-confirm-agendamento {
+                background: #00b341;
+                color: white;
+                display: none;
+            }
+
+            .selected > .btn-confirm-agendamento.visible {
+                display: block;
+                float: right;
+                height: 44px;
+                margin-top: -10px;
+                margin-right: -10px;
+                border-radius: 0;
+            }
+
+            .big {
+                --iron-icon-height: 65px;
+                --iron-icon-width: 65px;
+              }
+
+            .green-check {
+                color: #2c841c;
+            }
+        </style>
+        <app-location route="{{route}}"></app-location>
+        <app-route route="{{route}}" pattern="/agenda/:professionalId" data="{{routeData}}" active="{{pageActive}}"></app-route>
+        <app-route route="{{route}}" pattern="/agenda/:professionalId/confirmed" data="{{routeData}}" active="{{pageConfirmedActive}}"></app-route>
+
+        <iron-ajax id="professionalInfoAjax"
+                   url="/agenda/GetProfessionalInfo"
+                   handle-as="json"
+                   loading="{{loadingProfessionalInfo}}"
+                   last-response="{{professionalInfo}}"></iron-ajax>
+
+        <iron-ajax id="agendaScheduleAjax"
+                   url="/agenda/GetAgendaSchedule"
+                   handle-as="json"
+                   loading="{{loadingAgendaSchedule}}"
+                   last-response="{{agendaSchedule}}"></iron-ajax>
+
+        <iron-ajax id="confirmAgendamentoService"
+                   url="/agenda/confirm"
+                   content-type="application/json"
+                   method="POST"
+                   loading="{{loadingConfirmAgendamento}}"
+                   on-response="_confagendaserviceok"
+                   on-error="_cadservicenotfound"></iron-ajax>
+        <div id="container" class="flex-center-justified" hidden$="{{!pageActive}}">
+            <paper-material elevation="2" class="checkapp-page">
+                <div id="agendamentoContainer" hidden$="{{pageConfirmedActive}}">
+                    <div class="group-item">
+                        <iron-image class="avatar" sizing="contain" src="[[professionalInfo.srcPhoto]]"></iron-image>
+                        <div class="pad">
+                            <span class="primary">[[professionalInfo.name]]</span>
+                            <span class="secondary">[[professionalInfo.endereco]]</span>
+                            <span class="secondary">[[professionalInfo.bairro]]</span>
+                            <span class="secondary">[[professionalInfo.professionalName]]</span>
+                            <span class="secondary">[[_formatCurrency(professionalInfo.value)]]</span>
+                        </div>
+                    </div>
+                    <div id="dateSelected">
+                        <paper-icon-button icon="icons:arrow-back" on-tap="_previousDateConsulta" disabled="{{!canBackDate}}"></paper-icon-button>
+                        <paper-button class="btn-datepicker" elevation="4" on-tap="_showDialog">
+                            {{_formatDate(dateConsulta)}}
+                        </paper-button>
+                        <paper-icon-button icon="icons:arrow-forward" on-tap="_nextDateConsulta" disabled="{{!canForwardDate}}"></paper-icon-button>
+                    </div>
+                    <paper-dialog id="dialog" class="paper-date-picker-dialog" modal on-iron-overlay-closed="dismissDialog">
+                        <paper-date-picker id="picker" date="[[dateConsulta]]" locale="pt-BR" min-date="[[minDate]]" heading-format="[[headingFormat]]"></paper-date-picker>
+                        <div class="buttons">
+                            <paper-button dialog-dismiss>Cancelar</paper-button>
+                            <paper-button dialog-confirm on-tap="_confirmDate">OK</paper-button>
+                        </div>
+                    </paper-dialog>
+                    <div id="horariosContainer">
+                        <template is="dom-if" if="{{loadingAgendaSchedule}}">
+                            <div class="flex-center-justified">
+                                <paper-spinner-lite active></paper-spinner-lite>
+                            </div>
+                        </template>
+    <iron-list id="horarios" items="{{agendaSchedule}}" scroll-target="document" selection-enabled selected-item="{{selectedAgendamento}}" hidden$="{{loadingAgendaSchedule}}">
+        <template>
+                                <div class="item-horario" on-tap="selectAgendamento">
+                                    <paper-material elevation="1" class="horario-selectable">
+                                        <span>[[item.beginTime]]</span>
+                                        <paper-button class="btn-confirm-agendamento" elevation="0" on-tap="_confirmAgendamento">Agendar</paper-button>
+                                    </paper-material>
+                                </div>
+                            </template>
+    </iron-list>
+    </div>
+    </div>
+    <div id="confirmContainer" hidden$="{{!pageConfirmedActive}}">
+        <div class="flex-center-justified">
+            <iron-icon icon="icons:check-circle" class="big green-check"></iron-icon>
+        </div>
+        <span class="flex-center-justified">Seu horário foi agendando com sucesso!</span>
+        <br />
+        <span class="flex-center-justified">Em breve você receberá uma notificação confirmando seu agendamento.</span>
+        <br />
+        <paper-button class="primary flex-center-justified" on-tap="_goHistory">Acompanhe seu agendamento</paper-button>
+    </div>
+    </paper-material>
+    </div>
+    </template>
+    <script>
+        (function() {
+            Polymer({
+                is: 'agenda-view',
+                properties: {
+                    description: {
+                        type: String,
+                        value: 'Agendamento'
+                    },
+                    professionalInfo: {},
+                    dateConsulta: {
+                        type: Date,
+                        value: function() {
+                            return new Date();
+                        }
+                    },
+                    minDate: {
+                        value: function() {
+                            return new Date();
+                        }
+                    },
+                    headingFormat: {
+                        value: "ddd, D MMM"
+                    },
+                    hiddenDPDialog: true,
+                    agendamentoConfirmed: {
+                        value: false
+                    }
+                },
+                observers: [
+                    '_routeChanged(route)',
+                    '_dateConsultaChanged(dateConsulta)',
+                    '_agendaScheduleChanged(agendaSchedule)'
+                ],
+                _routeChanged: function(route) {
+                    if (route.path.indexOf('/agenda') > -1) {
+                        this._loadAgendamento();
+                        this._loadProfessionalInfo();
+                    }
+                },
+                _agendaScheduleChanged: function() {
+                    this._clearSelectedAgendamento();
+                },
+                selectAgendamento: function(e) {
+                    this._clearSelectedAgendamento();
+
+                    var horSelect = Polymer.dom(e.currentTarget).querySelector('.horario-selectable');
+                    var btnConfirmAgendamento = Polymer.dom(e.currentTarget).querySelector('.btn-confirm-agendamento');
+                    horSelect.classList.add('selected');
+                    btnConfirmAgendamento.classList.add('visible');
+                },
+                _clearSelectedAgendamento: function() {
+                    var itensHor = Polymer.dom(this.root).querySelectorAll('.horario-selectable.selected');
+
+                    for (var i = 0; i < itensHor.length; i++) {
+                        var itemHor = itensHor[i];
+                        itemHor.classList.remove('selected');
+                    }
+                },
+                _loadAgendamento: function() {
+                    if (this.routeData) {
+                        this.$.agendaScheduleAjax.params.professionalid = this.routeData.professionalId;
+                        this.$.agendaScheduleAjax.params.jsdate = this.dateConsulta.toISOString();
+                        this.$.agendaScheduleAjax.generateRequest();
+                    }
+                },
+                _loadProfessionalInfo: function() {
+                    if (this.routeData) {
+                        this.$.professionalInfoAjax.params.id = this.routeData.professionalId;
+                        this.$.professionalInfoAjax.generateRequest();
+                    }
+                },
+                _formatDate: function(date) {
+                    return moment(date).format('DD/MM/YYYY');
+                },
+                _formatCurrency: function(value) {
+                    return numeral(value).format('($ 0.00 a)');
+                },
+                _showDialog: function() {
+                    document.body.append(this.$.dialog);
+                    this.$.dialog.toggle();
+                },
+                _confirmDate: function() {
+                    this.dateConsulta = this.$.picker.date;
+                },
+                _previousDateConsulta: function() {
+                    this.dateConsulta = moment(this.dateConsulta).add(-1, 'd').toDate();
+                },
+                _nextDateConsulta: function() {
+                    this.dateConsulta = moment(this.dateConsulta).add(1, 'd').toDate();
+                },
+                _dateConsultaChanged: function(dateConsulta) {
+                    this.canBackDate = moment(dateConsulta).isAfter(this.minDate);
+                    this.canForwardDate = true;
+
+                    this._loadAgendamento();
+                },
+                _confirmAgendamento: function() {
+                    this.$.confirmAgendamentoService.body = {
+                        AgendaScheduleID: this.selectedAgendamento.agendaScheduleID,
+                        DateSchedule: this.dateConsulta.toISOString(),
+                        BeginTime: this.selectedAgendamento.beginTime,
+                        EndTime: this.selectedAgendamento.endTime,
+                    };
+
+                    this.$.confirmAgendamentoService.generateRequest();
+                },
+                _confagendaserviceok: function() {
+                    //this.agendamentoConfirmed = true;
+                    this.set('route.path', this.route.path + '/confirmed');
+                },
+                _goHistory: function() {
+                    this.set('route.path', '/history');
+                }
+            });
+        })();
+    </script>
+</dom-module>

@@ -1,0 +1,517 @@
+﻿<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-material/paper-material.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../bower_components/facebook-login/dist/facebook-login.html">
+<link rel="import" href="../bower_components/iron-form/iron-form.html" />
+<link rel="import" href="../bower_components/paper-checkbox/paper-checkbox.html" />
+<link rel="import" href="../bower_components/paper-radio-group/paper-radio-group.html" />
+<link rel="import" href="../bower_components/paper-radio-button/paper-radio-button.html" />
+<link rel="import" href="../bower_components/iron-image/iron-image.html" />
+<link rel="import" href="../bower_components/paper-dropdown-menu/paper-dropdown-menu.html" />
+
+<!--<link rel="import" href="../bower_components/polymer-cookie/polymer-cookie.html">-->
+
+<!--styles-->
+<link rel="import" href="styles/checkapp-styles.html">
+
+<dom-module id="login-page">
+    <style include="checkapp-styles">
+         :host {
+            display: none;
+            font-family: Roboto, Helvetica, Arial, sans-serif;
+            background: #ffffff;
+            text-align: left;
+        }
+        
+        paper-material {
+            padding: 16px;
+            width: 300px;
+        }
+        
+        .iconLogo {
+            --iron-image-width: 100%;
+            width: 100%;
+            height: 95px;
+            margin-top: 10px;
+        }
+        
+        #btnLogin {
+            background: #44546a;
+            color: #ffffff;
+            width: 100%;
+            margin: 30px 0 10px;
+        }
+        
+        .bottomLoginPage {
+            text-align: center;
+            font-size: 13px;
+        }
+        
+        .width100 {
+            width: 100%;
+        }
+        
+        .bottomLoginPage table {
+            width: 100%;
+        }
+        
+        .bottomLoginPage td {
+            text-align: center;
+        }
+        
+        a,
+        a:active,
+        a:visited {
+            color: #44546a;
+            /*text-decoration: none;*/
+        }
+        
+        paper-input-error {
+            padding-top: 10px;
+        }
+        
+        .avatar {
+            height: 70px;
+            width: 70px;
+            border-radius: 35px;
+        }
+        
+        .pdm-especialidade {
+            --paper-dropdown-menu-button: {
+                width: 100%;
+            }
+            ;
+        }
+    </style>
+    <template>
+        <!--<polymer-cookie name="access_token" id="acc_token" format="s"></polymer-cookie>-->
+        
+        <iron-ajax id="tokenService"
+                   url="/token"
+                   method="POST"
+                   content-type="application/x-www-form-urlencoded"
+                   on-response="updatetoken"
+                   on-error="loginError"></iron-ajax>
+
+        <iron-ajax id="fbcredentialService"
+                   url="/login/fbcredentials"
+                   method="POST"
+                   on-response="_fbcredentialok"
+                   on-error="_fbcredentialnotfound"></iron-ajax>
+        
+
+        <iron-ajax id="cadService"
+                   url="/login/registeruser"
+                   content-type="application/json"
+                   method="POST"
+                   last-error="{{cadresponse}}"
+                   on-response="_cadserviceok"
+                   on-error="_cadservicenotfound"></iron-ajax>   
+
+        <iron-ajax id="appointmentSearchAjax"
+                   url="/appointmenttype"
+                   handle-as="json"
+                   last-response="{{appointmentTypesList}}"></iron-ajax>
+        
+        <iron-ajax id="logoutService"
+                   url="/login/logout"
+                   method="POST"></iron-ajax>     
+
+        <app-location route="{{route}}"></app-location>
+        <app-route route="{{route}}" pattern="/login" data="{{routeData}}"></app-route>
+        <app-route route="{{route}}" pattern="/register" data="{{routeData}}" active="{{registerActive}}"></app-route>
+
+        <paper-material elevation="1">
+            <div hidden$="{{registerActive}}">
+                <iron-image sizing="contain" fade src="../images/ca_marca.png" class="iconLogo"></iron-image>
+                <div>
+                    <paper-input id="loginUsername" label="Usuário" autofocus value="{{userLogin}}"></paper-input>
+                </div>
+                <div>
+                    <paper-input-container id="loginPasswordContainer">
+                        <label>Senha</label>
+                        <input is="iron-input" id="loginPassword" type="password" bind-value="{{userPassword}}">
+                        <paper-input-error>Usuário ou Senha inválido.</paper-input-error>
+                    </paper-input-container>
+                </div>
+                <div>
+                    <paper-button id="btnLogin" on-tap="gettoken">Entrar</paper-button>
+                </div>
+                <div class="bottomLoginPage">
+                    <table>
+                        <tr>
+                            <td>Não possui conta? <a href="/register">Cadastre-se</a></td>
+                        </tr>
+                        <tr>
+                            <td>Esqueceu a senha? <a href="/forgot">Recupere</a></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div hidden$="{{!registerActive}}">
+                <form is="iron-form" id="cadForm">
+                    <!--<div class="flex-center-justified">
+                        <iron-image class="avatar" sizing="contain" src="{{cadInfo.photourl}}"></iron-image>                        
+                    </div>-->
+                    <paper-radio-group selected="{{cadInfo.usertype}}" class="flex-center-justified">
+                        <paper-radio-button name="1" value="1">Paciente</paper-radio-button>
+                        <paper-radio-button name="2" value="2">Médico</paper-radio-button>
+                    </paper-radio-group>
+                    <template is="dom-if" if="{{isCadMedic}}">
+                        <paper-dropdown-menu label="Especialidade" noink no-animations class="flex-center-justified pdm-especialidade">
+                            <paper-listbox class="dropdown-content" attr-for-selected="id" selected="{{cadInfo.appointmenttype}}">
+                                <template is="dom-repeat" items="{{appointmentTypesList}}">
+                                    <paper-item id="[[item.id]]">{{item.name}}</paper-item>
+                                </template>
+    </paper-listbox>
+    </paper-dropdown-menu>
+    </template>
+    <paper-input id="Name" name="name" label="Nome Completo" required value="{{cadInfo.name}}"></paper-input>
+    <paper-input id="Email" name="email" type="email" label="E-mail" required value="{{cadInfo.email}}"></paper-input>
+    <paper-input id="Password" name="password" label="Senha" type="password" required value="{{cadInfo.password}}"></paper-input>
+    <paper-dropdown-menu id="Gender" label="Gênero" attr-for-selected="id" noink no-animations class="flex-center-justified pdm-especialidade">
+        <paper-listbox class="dropdown-content" attr-for-selected="id" selected="{{cadInfo.gender}}">
+            <paper-item id="0">Feminino</paper-item>
+            <paper-item id="1">Masculino</paper-item>
+        </paper-listbox>
+    </paper-dropdown-menu>
+    <paper-input id="Birthday" name="birthday" label="Data de Nascimento" required value="{{_formatDate(birthday)}}">
+        <paper-icon-button suffix on-tap="_showDialog" icon="date-range">
+        </paper-icon-button>
+    </paper-input>
+    <br />
+    <div class="flex-center-justified">
+        <paper-button class="danger" raised on-tap="_reset">Cancelar</paper-button>
+        <paper-button class="primary" raised on-tap="_submit">Confirmar</paper-button>
+    </div>
+    </form>
+
+    <paper-dialog id="dialog" class="paper-date-picker-dialog" modal>
+        <paper-date-picker id="picker" date="[[cadInfo.birthday]]" locale="[[locale]]" heading-format="[[headingFormat]]"></paper-date-picker>
+        <div class="buttons">
+            <paper-button dialog-dismiss>Cancelar</paper-button>
+            <paper-button dialog-confirm on-tap="_confirmDate">OK</paper-button>
+        </div>
+    </paper-dialog>
+    </div>
+    </paper-material>
+    </template>
+    <script>
+        Polymer({
+            is: 'login-page',
+            behaviors: [
+                Polymer.NeonAnimationRunnerBehavior
+            ],
+            properties: {
+                opened: {
+                    type: Boolean
+                },
+                fbresp_id: 0,
+                isCadMedic: false,
+                fbAppId: 282359548826115,
+                fbloginready: false,
+                user: {
+                    type: Object,
+                    notify: true,
+                    value: null,
+                    observer: '_userChanged'
+                },
+                isLoggedIn: {
+                    type: Boolean,
+                    notify: true,
+                    observer: '_isLoggedInChanged'
+                },
+                birthday: new Date(),
+                cadInfo: {
+                    type: Object,
+                    value: {
+                        photourl: "/images/common/ic_account_circle_black.png",
+                        usertype: 1,
+                        name: "",
+                        lastname: "",
+                        email: "",
+                        birthday: new Date(),
+                        facebookid: "",
+                        appointmenttype: 0,
+                        password: "",
+                        gender: 0
+                    },
+                    notify: true
+                },
+                token: {
+                    type: Object,
+                    observer: '_tokenChanged'
+                },
+                animationConfig: {
+                    value: function() {
+                        return {
+                            'entry': {
+                                name: 'fade-in-animation',
+                                node: this,
+                                timing: {
+                                    duration: 500
+                                }
+                            },
+                            'exit': {
+                                name: 'fade-out-animation',
+                                node: this
+                            }
+                        }
+                    }
+                },
+                userLoggingHidden: false,
+                userFirstTimeHidden: true,
+                maxDate: {
+                    value: function() {
+                        return new Date();
+                    }
+                },
+                headingFormat: {
+                    value: "ddd, D MMM"
+                },
+                locale: {
+                    value: "pt-br"
+                },
+                userLogin: '',
+                userPassword: ''
+            },
+            observers: [
+                '_routeChanged(route)',
+                '_cadinfoUsertypeChanged(cadInfo.usertype)',
+                '_birthdayChanged(birthday)'
+            ],
+            listeners: {
+                'neon-animation-finish': '_onNeonAnimationFinish'
+            },
+            ready: function() {
+                var _this = this;
+                var accessToken = this.readCookie("access_token");
+
+                // if (accessToken != '') {
+                //     this.isLoggedIn = true;
+                // }
+
+                //this.$.fbLogin.addEventListener('graph-response',
+                //    function (e) {
+                //        _this.fbresp = e.detail;
+                //        _this._checkUserId();
+                //    });
+
+                // this.$.fbLogin.addEventListener('signin-success',
+                //     function(e) {
+                //         try {
+                //             _this.fbresp_id = e.detail.response.id;
+
+                //         } catch (e) {}
+                //         try {
+                //             _this.fbresp_id = e.detail.response.authResponse.userID;
+                //         } catch (e) {}
+
+                //         _this._checkUserId();
+                //     });
+
+                // this.$.fbLogin.addEventListener('ready',
+                //     function() {
+                //         _this.async(function() {
+                //             _this.$.fbLoginContainer.style.display = 'block';
+                //         }, 1000);
+                //     });
+
+                // this.$.fbLoginContainer.addEventListener('click',
+                //     function() {
+                //         console.log('click');
+                //     });
+            },
+            _birthdayChanged: function(birthday) {
+                this.cadInfo.birthday = birthday;
+            },
+            _cadinfoUsertypeChanged: function(usertype) {
+                this.isCadMedic = usertype == 2;
+            },
+            show: function() {
+                //this.set('route.path', '/login');
+                this.opened = true;
+                this.style.display = 'inline-block';
+                this.cancelAnimation();
+                this.playAnimation('entry');
+            },
+            hide: function() {
+                this.opened = false;
+                this.clearLoginFields();
+                this.cancelAnimation();
+                this.playAnimation('exit');
+            },
+            _routeChanged: function(route) {
+                if (route.path == '/login') {
+                    this.logout();
+                }
+                if (route.path == '/register') {
+                    this.$.appointmentSearchAjax.generateRequest();
+                }
+            },
+            gettoken: function() {
+                this.token = {};
+                this.eraseCookie("access_token");
+
+                var oauth_id = '';
+                try {
+                    oauth_id = this.fbresp_id;
+                } catch (e) {};
+
+                this.$.tokenService.body = {
+                    "username": this.userLogin,
+                    "password": this.userPassword
+                };
+                this.$.tokenService.generateRequest();
+            },
+
+            updatetoken: function(theResponse) {
+                this.token = theResponse.detail.response;
+            },
+
+            _onNeonAnimationFinish: function() {
+                if (!this.opened) {
+                    this.style.display = 'none';
+                }
+            },
+            _tokenChanged: function(token) {
+                // if (Object.keys(token).length === 0) {
+                //     this.isLoggedIn = false;
+                // } else {
+                //     this.createCookie("access_token", token.access_token, token.expires_in);
+
+                //     this.isLoggedIn = true;
+                // }
+            },
+            clearLoginFields: function() {
+                this.userLogin = this.userPassword = '';
+            },
+            loginError: function() {
+                //if (this.userLogin != '' || this.userPassword != '') {
+                var self = this;
+                this.$.loginUsername.invalid = this.$.loginPasswordContainer.invalid = true;
+
+                setTimeout(function() {
+                        self.$.loginUsername.invalid = self.$.loginPasswordContainer.invalid = false;
+                    },
+                    5000);
+                //}
+            },
+            logout: function() {
+                this.token = null;
+                // this.user = null;
+                this.fbresp_id = 0;
+                this.eraseCookie("access_token");
+                this.$.logoutService.generateRequest();
+                this.show();
+            },
+            _userChanged: function(user) {
+                if (user) {
+                    this.set('route.path', '/default');
+                    this.hide();
+                } else {
+                    this.set('route.path', '/');
+                    this.show();
+                }
+            },
+            _submit: function() {
+                this.$.cadService.body = this.cadInfo;
+                this.$.cadService.generateRequest();
+            },
+            _reset: function() {
+                this.$.cadForm.reset();
+                this.set('route.path', '/');
+            },
+            _loadfbdata: function() {
+                if (this.fbdata && Object.keys(this.fbdata).length > 0) {
+                    var fbdata = this.fbdata;
+                    var date = moment(fbdata.birthday);
+
+                    this.cadInfo = {
+                        facebookid: fbdata.id,
+                        usertype: 1,
+                        name: fbdata.first_name,
+                        lastname: fbdata.last_name,
+                        gender: (fbdata.gender == "female" ? 0 : 1),
+                        email: fbdata.email,
+                        photourl: fbdata.picture.data.url
+                    }
+
+                    this.birthday = date.toDate();
+                }
+            },
+            _confirmDate: function() {
+                this.cadInfo.birthday = this.$.picker.date;
+            },
+            _formatDate: function(date) {
+                var moDate = moment(date);
+                if (moDate.isValid())
+                    return moDate.format('DD/MM/YYYY');
+
+                return "";
+            },
+            _showDialog: function() {
+                document.body.append(this.$.dialog);
+                this.$.dialog.toggle();
+            },
+            _fbcredentialok: function() {
+                this.gettoken();
+            },
+            _fbcredentialnotfound: function() {
+                this.async(function() {
+                    this._loadfbdata();
+                    this.set('route.path', '/register');
+                }, 1000);
+            },
+            _checkUserId: function() {
+                this.$.fbcredentialService.params.fb_id = this.fbresp_id;
+                this.$.fbcredentialService.generateRequest();
+            },
+            _cadserviceok: function() {
+                this.userLogin = this.cadInfo.email;
+                this.userPassword = this.cadInfo.password;
+                this.gettoken();
+            },
+            _cadservicenotfound: function() {
+                if (this.cadresponse &&
+                    this.cadresponse.response) {
+                    for (var i in this.cadresponse.response) {
+                        var validation = this.cadresponse.response[i];
+                        this.$[validation.key].errorMessage = validation.errors[0].errorMessage;
+                        this.$[validation.key].invalid = true;
+                    }
+                }
+            },
+            _confirmDate: function() {
+                this.birthday = this.$.picker.date;
+            },
+            createCookie: function(name, value, minutes) {
+                var expires = "";
+                if (minutes) {
+                    var date = new Date();
+                    date.setTime(date.getTime() + (minutes * 60 * 1000));
+                    expires = "; expires=" + date.toGMTString();
+                }
+
+                document.cookie = name + "=" + value + expires + "; path=/";
+            },
+
+            readCookie: function(name) {
+                var nameEQ = name + "=";
+                var ca = document.cookie.split(';');
+                for (var i = 0; i < ca.length; i++) {
+                    var c = ca[i];
+                    while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+                    if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+                }
+                return null;
+            },
+            eraseCookie: function(name) {
+                this.createCookie(name, "", -1);
+            }
+        });
+    </script>
+</dom-module>

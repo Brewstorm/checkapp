@@ -1,0 +1,348 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/app-layout/app-drawer/app-drawer.html">
+<link rel="import" href="../bower_components/app-layout/app-drawer-layout/app-drawer-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-header/app-header.html">
+<link rel="import" href="../bower_components/app-layout/app-header-layout/app-header-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-scroll-effects/app-scroll-effects.html">
+<link rel="import" href="../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../bower_components/app-route/app-location.html">
+<link rel="import" href="../bower_components/app-route/app-route.html">
+<link rel="import" href="../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-icons/social-icons.html">
+<link rel="import" href="../bower_components/iron-selector/iron-selector.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/iron-image/iron-image.html">
+<link rel="import" href="../bower_components/paper-toast/paper-toast.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<!--<link rel="import" href="../bower_components/polymer-cookie/polymer-cookie.html">-->
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animation-runner-behavior.html">
+
+<link rel="import" href="../bower_components/moment-element/moment-with-locales-import.html" />
+
+<link rel="import" href="login.html">
+<link rel="import" href="consult.html">
+<link rel="import" href="examinations.html">
+<link rel="import" href="default.html">
+<link rel="import" href="history.html">
+<link rel="import" href="profile.html">
+<link rel="import" href="settings.html">
+<link rel="import" href="agenda.html">
+<link rel="import" href="calendar.html">
+
+<!--styles-->
+<link rel="import" href="styles/checkapp-styles.html">
+
+<dom-module id="check-app">
+    <template>
+        <style include="checkapp-styles"></style>
+
+        <app-location route="{{route}}"></app-location>
+
+        <app-route route="{{route}}"
+                   pattern="/:page"
+                   data="{{routeData}}"
+                   tail="{{subroute}}" active="{{activeRoute}}"></app-route>
+
+        <iron-ajax id="tokenService"
+                   url="/api/token"
+                   method="POST"
+                   content-type="application/x-www-form-urlencoded"
+                   on-response="updatetoken"></iron-ajax>
+
+        <iron-ajax id="userdataService"
+                   auto
+                   url="/api/user"
+                   content-type="application/json"
+                   method="GET"
+                   last-response="{{userData}}"></iron-ajax>        
+
+        <!--<polymer-cookie name="access_token" id="acc_token" format="s"></polymer-cookie>-->
+
+        <iron-media-query id="ironMediaQuery" query="(min-width:640px)" on-query-matches-changed="_onQueryMatchesChanged"></iron-media-query>
+
+        <div class="login-container">
+            <login-page id="appLogin" token="{{token}}"></login-page>
+        </div>
+        
+        <template is="dom-if" if="{{userData}}">
+            <app-drawer-layout id="appDrawerLayout" fullbleed>
+                <!-- Drawer content -->
+                <app-drawer id="appDrawer">
+                    <div id="appLogoContainer">
+                        <iron-image sizing="contain" fade src="../images/ca_logo.png" class="iconLogo"></iron-image>
+                        <span>CheckApp</span>
+                    </div>
+                    <iron-selector selected="[[page]]" attr-for-selected="name" class="drawer-list" role="navigation">
+                        <a name="default" href="/default">
+                            <iron-icon icon="icons:home" class="big"></iron-icon>
+                            <span>Início</span>
+                        </a>
+                        <a name="profile" href="/profile">
+                            <iron-icon icon="social:person" class="big"></iron-icon>
+                            <span>Perfil</span>
+                        </a>
+                        <a name="history" href="/history">
+                            <iron-icon icon="icons:history" class="big"></iron-icon>
+                            <span>Histórico</span>
+                        </a>
+                        <a name="settings" href="/settings">
+                            <iron-icon icon="icons:settings" class="big"></iron-icon>
+                            <span>Configurações</span>
+                        </a>
+                    </iron-selector>
+                </app-drawer>
+                <!-- Main content -->
+                <app-header-layout id="container" has-scrolling-region>
+                    <app-header reveals snaps shadow>
+                        <app-toolbar>
+                            <paper-icon-button icon="arrow-back" on-tap="_historyBack" hidden$="{{hiddenHistoryBack}}"></paper-icon-button>
+                            <div id="pageDescriptionLabel" main-title>
+                                {{pageDescription}}
+                            </div>
+                        </app-toolbar>
+                    </app-header>
+                    <iron-pages id="appIronPages" selected="[[page]]" selected-item="{{selectedPage}}" attr-for-selected="name" fallback-selection="view404" role="main">
+                        <default-view name="default"></default-view>
+                        <profile-view name="profile" user-data="{{userData}}"></profile-view>
+                        <history-view name="history"></history-view>
+                        <settings-view name="settings"></settings-view>
+                        <consult-view name="consult"></consult-view>
+                        <examinations-view name="examinations"></examinations-view>
+                        <agenda-view name="agenda"></agenda-view>
+                        <calendar-view name="calendar"></calendar-view>
+                    </iron-pages>
+                    <paper-toast id="toast" class="fit-bottom" duration="0" text="Você está Offline." raised></paper-toast>
+                </app-header-layout>
+            </app-drawer-layout>
+            <paper-tabs id="tabs" selected="[[page]]" attr-for-selected="name" sticky class="menu-tabs">
+                <paper-tab name="default" link>
+                    <a href="/default" class="link" tabindex="-1">
+                        <iron-icon icon="icons:home"></iron-icon>
+                        <span>Início</span>
+                    </a>
+                </paper-tab>
+                <paper-tab name="profile" link>
+                    <a href="/profile" class="link" tabindex="-1">
+                        <iron-icon icon="social:person"></iron-icon>
+                        <span>Perfil</span>
+                    </a>
+                </paper-tab>
+                <paper-tab name="history" link>
+                    <a href="/history" class="link" tabindex="-1">
+                        <iron-icon icon="icons:history"></iron-icon>
+                        <span>Histórico</span>
+                    </a>
+                </paper-tab>
+                <paper-tab name="settings" link>
+                    <a href="/settings" class="link" tabindex="-1">
+                        <iron-icon icon="icons:settings"></iron-icon>
+                        <span>Configurações</span>
+                    </a>
+                </paper-tab>
+            </paper-tabs>
+        </template>
+    </template>
+    <script>
+        (function() {
+            Polymer({
+                is: 'check-app',
+                behaviors: [
+                    Polymer.NeonAnimationRunnerBehavior
+                ],
+                properties: {
+                    hidetabs: true,
+                    pageDescription: '',
+                    hiddenHistoryBack: true,
+                    selectedPage: {
+                        notify: true,
+                        observer: '_selectedPageChanged'
+                    },
+                    token: {
+                        type: Object,
+                        observer: '_tokenChanged'
+                    },
+                    userData: {
+                        type: Object,
+                        notify: true,
+                        value: null,
+                        observer: '_userChanged'
+                    },
+                    page: {
+                        type: String,
+                        reflectToAttribute: true
+                    },
+                    animationConfig: {
+                        value: function() {
+                            return {
+                                'entry': {
+                                    name: 'fade-in-animation',
+                                    node: this.$.appDrawerLayout,
+                                    timing: {
+                                        duration: 1000
+                                    }
+                                },
+                                'exit': {
+                                    name: 'fade-out-animation',
+                                    node: this.$.appDrawerLayout,
+                                    timing: {
+                                        duration: 50
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                _historyBack: function() {
+                    window.history.back();
+                },
+                _hiddenBackButton: function(isActive) {
+                    return isActive;
+                },
+                ready: function() {
+                    var self = this;
+
+                    moment.locale('pt-BR');
+
+                    if (this.$.appDrawer)
+                        this.$.appDrawer.addEventListener('opened-changed',
+                            function(e) {
+                                self.$.tabs.hidden = e.detail.value;
+                            });
+
+                    if (this.$.appIronPages) {
+                        this.$.appIronPages.addEventListener('iron-select',
+                            function(e) {
+                                e.detail.item.active = true;
+                            });
+
+                        this.$.appIronPages.addEventListener('iron-deselect',
+                            function(e) {
+                                e.detail.item.active = false;
+                            });
+                    }
+                    if (self.$.toast)
+                        self.$.toast.fitInto = self.$.container;
+                },
+                _isCookieExpired: function() {
+                    return this.readCookie("access_token") == '';
+                },
+
+                logoutAction: function() {
+                    // this.$.acc_token.eraseCookie();
+                    // this.$.appLogin.logout();
+                    this.userData = null;
+                },
+
+                setPageDescription: function() {
+                    if (this.userData && this.$.appIronPages.selectedItem) {
+                        document.title = 'CheckApp - ' + this.pageDescription;
+                    } else {
+                        document.title = 'CheckApp - Saúde na palma da sua mão.';
+                    }
+                },
+
+                show: function() {
+                    // if (this.$.appDrawerLayout.style.display != 'block') {
+                    // this.$.appDrawerLayout.style.display = 'block';
+                    // this.$.appDrawerLayout.resetLayout();
+                    // this.$.container.resetLayout();
+
+                    this.cancelAnimation();
+                    this.playAnimation('entry');
+                    // }
+                },
+
+                hide: function() {
+                    this.cancelAnimation();
+                    //this.playAnimation('exit');
+                    // this.$.appDrawerLayout.style.display = 'none';
+                },
+
+                observers: [
+                    '_routePageChanged(routeData.page)',
+                    '_routeChanged(route)'
+                ],
+                listeners: {
+                    'neon-animation-finish': '_onNeonAnimationFinish'
+                },
+
+                _onNeonAnimationFinish: function() {},
+                _selectedPageChanged: function(selectedPage) {
+                    if (selectedPage)
+                        this.pageDescription = selectedPage.description;
+                },
+                _routePageChanged: function(page) {
+                    this.page = page || 'default';
+                    this.hiddenHistoryBack = this.page == "default";
+                    this._updateDescriptionLabelStyle();
+                },
+                _routeChanged: function(route) {},
+                _userChanged: function(user) {
+                    if (!user) {
+                        this.hide();
+                        this.set('route.path', '/login');
+                    } else {
+                        this.show();
+                    }
+                },
+                _tokenChanged: function(token) {
+                    if (Object.keys(token).length === 0) {
+                        this.createCookie("access_token", token.access_token, token.expires);
+                    }
+                },
+
+                // _isLoggedInChanged: function(isLoggedIn) {
+                //     this.$.tabs.hidden = this.$.appDrawer.opened || !isLoggedIn;
+                //     this.setPageDescription();
+
+                //     if (this._isCookieExpired()) {
+                //         // this.hide();
+                //         this.set('route.path', '/login');
+                //     } else {
+                //         this.show();
+                //     }
+                // },
+
+                _showPage404: function() {
+                    this.page = 'view404';
+                },
+
+                _onQueryMatchesChanged: function(event) {
+                    this._updateDescriptionLabelStyle();
+                },
+                _updateDescriptionLabelStyle: function() {
+                    // if (!this.$.ironMediaQuery.queryMatches) {
+                    //     this.$.pageDescriptionLabel.style.textAlign = 'center';
+                    //     this.$.pageDescriptionLabel.style.marginLeft = (this.page != 'default' ? '-40px' : '');
+                    // } else {
+                    //     this.$.pageDescriptionLabel.style.textAlign = '';
+                    //     this.$.pageDescriptionLabel.style.marginLeft = '';
+                    // }
+                },
+                createCookie: function(name, value, expires) {
+                    document.cookie = name + "=" + value + "; expires=" + expires + "; path=/";
+                },
+
+                readCookie: function(name) {
+                    var nameEQ = name + "=";
+                    var ca = document.cookie.split(';');
+                    for (var i = 0; i < ca.length; i++) {
+                        var c = ca[i];
+                        while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+                        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+                    }
+                    return null;
+                },
+                eraseCookie: function(name) {
+                    this.createCookie(name, "", -1);
+                }
+            });
+        })();
+    </script>
+</dom-module>

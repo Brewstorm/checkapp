@@ -1,0 +1,7 @@
+<html><head><link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animation-behavior.html">
+<link rel="import" href="../bower_components/neon-animation/web-animations.html">
+
+
+
+<script>Polymer({is:"login-animation",behaviors:[Polymer.NeonAnimationBehavior],configure:function(r){var e=r.node;return r.transformOrigin&&this.setPrefixedProperty(e,"transformOrigin",r.transformOrigin),this._effect=new KeyframeEffect(e,[{offset:0,transform:"scale(0)"},{offset:.8,transform:"scale(1.5, 1.5)"},{offset:.9,transform:"scale(0.8, 0.8)"},{offset:.95,transform:"scale(1.2, 1.2)"},{offset:.98,transform:"scale(0.9, 0.9)"},{offset:1,transform:"scale(1, 1)"}],this.timingFromConfig(r)),this._effect}});</script></head><body></body></html>

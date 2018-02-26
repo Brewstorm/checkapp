@@ -1,0 +1,39 @@
+{
+  "name": "checkapp",
+  "version": "1.0.0",
+  "description": "Saúde na palma da sua mão.",
+  "main": "index.js",
+  "scripts": {
+    "test": "make test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://Andermeurer@bitbucket.org/Andermeurer/checkapp.git"
+  },
+  "keywords": [
+    "npm"
+  ],
+  "author": "Anderson Meurer <anderson.meurer@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://bitbucket.org/Andermeurer/checkapp#readme",
+  "dependencies": {
+    "body-parser": "^1.17.1",
+    "boom": "^4.2.0",
+    "cookie-parser": "^1.4.3",
+    "crypto": "0.0.3",
+    "csurf": "^1.9.0",
+    "express": "^4.14.1",
+    "express-session": "^1.15.1",
+    "html": "^1.0.0",
+    "jsonwebtoken": "^7.3.0",
+    "jwt-express": "^1.1.0",
+    "mongodb": "^2.2.24",
+    "mongoose": "^4.8.6",
+    "mongoose-auto-increment": "^5.0.1",
+    "nodemailer": "^3.1.5",
+    "passport": "^0.3.2",
+    "passport-http": "^0.3.0",
+    "passport-local": "^1.0.0",
+    "randomstring": "^1.1.5"
+  }
+}
